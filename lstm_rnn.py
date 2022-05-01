@@ -115,9 +115,10 @@ class text_generator:
 
         return (start_string + ''.join(text_generated))
 
-    def main(self,start_string,predictability,num_generate):
+    def main(self,start_string,predictability,num_generate,retrain_model=True):
         data,vocab_size,char2idx,idx2char = self.preprocess()
-        self.train_model(data,vocab_size)
+        if retrain_model:
+            self.train_model(data,vocab_size)
         generated_text = self.generate_text(vocab_size,start_string,num_generate,char2idx,idx2char,predictability
                 )
         return generated_text
