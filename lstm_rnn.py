@@ -3,7 +3,7 @@ import keras
 import tensorflow as tf
 import numpy as np
 import os
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+from pathlib import Path
 
 class text_generator:
     def __init__(self,path_to_text):
@@ -14,7 +14,7 @@ class text_generator:
         self.embedding_dim = 256
         self.rnn_units = 1024
         self.buffer_size = 10000
-        self.epochs = 20
+        self.epochs = 10000
 
     def text_to_int(self,text,char2idx_):
         return np.array([char2idx_[c] for c in text])
@@ -26,9 +26,7 @@ class text_generator:
         return input_text, target_text  # hanniba, annibal
 
     def preprocess(self):
-        text = str()
-        with open(self.path_to_text,"r") as reader:
-            text = reader.read()
+        text = Path(self.path_to_text).read_text()
         vocab = sorted(set(text)) #set of unique characters
 
         # Creating a dictionary from unique characters to indices
@@ -71,8 +69,15 @@ class text_generator:
         checkpoint_callback=tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_prefix,
             save_weights_only=True) #only save weights to filepath
+        class haltCallback(tf.keras.callbacks.Callback):
+            def on_epoch_end(self, epoch, logs={}):
+                if(logs.get('loss') <= 0.5):
+                    print("\n\n\nReached 0.5 loss value so cancelling training!\n\n\n")
+                    self.model.stop_training = True
+        loss_callback = haltCallback()
 
-        model_trained = self.build_model(vocab_size).fit(data,epochs=self.epochs,callbacks=[checkpoint_callback])
+
+        model_trained = self.build_model(vocab_size).fit(data,epochs=self.epochs,callbacks=[checkpoint_callback,loss_callback])
 
     def build_generator_model(self,vocab_size):
         model = self.build_model(vocab_size,batch_size=1)
